@@ -1,4 +1,5 @@
 # ICU Length of Stay Prediction using the R programming language
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Logo_de_l%27Université_Jean_Monnet_Saint-Etienne.png/640px-Logo_de_l%27Université_Jean_Monnet_Saint-Etienne.png" alt="Université Jean Monnet" title="Université Jean Monnet">
 
 This . The goal of this project is to develop a predictive model for the length of stay of patients in the ICU (Intensive Care Unit) using the R programming language and a dataset of ICU patient records.
 
