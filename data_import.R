@@ -5,7 +5,7 @@
 patients <- read.csv("C:/Users/ariel/Documents/MLDM/Data Mining/mimic-iv-2.2/hosp/patients.csv")
 diagnoses <- read.csv("C:/Users/ariel/Documents/MLDM/Data Mining/mimic-iv-2.2/hosp/diagnoses_icd.csv")
 admissions <- read.csv("C:/Users/ariel/Documents/MLDM/Data Mining/mimic-iv-2.2/hosp/admissions.csv")
-omr <- read.csv("C:/Users/ariel/Documents/MLDM/Data Mining/mimic-iv-2.2/hosp/emar.csv")
+omr <- read.csv("C:/Users/ariel/Documents/MLDM/Data Mining/mimic-iv-2.2/hosp/omr.csv")
 
 d_icds <- read.csv("C:/Users/ariel/Documents/MLDM/Data Mining/mimic-iv-2.2/hosp/d_icd_diagnoses.csv")
 
@@ -25,5 +25,22 @@ adm_not_dead_days <- days_between(adm_not_dead, "admittime", "dischtime")
 
 summary(adm_not_dead_days$days_between)
 
-#TODO: concentrate diagnoses and diagnose numbers per patient (take first or first two diagnoses per patient)
+# Labeling days by length of stay.
+categorize_days <- function(days) {
+  if (days <= 7) {
+    return("0")
+  } else if (days <= 30) {
+    return("1")
+  } else {
+    return("2")
+  }
+}
 
+# Add new column to dataframe with categorized days
+adm_not_dead_days$stay_length <- sapply(adm_not_dead_days$days_between, categorize_days)
+
+#TODO: Get most relevant diagnosis from diagnoses table, associated to admissions table.
+#TODO: Get age and gender from NOT DEAD patients, repeat for dead patients.
+#TODO: Get patient's blood pressure.
+#TODO: Attempt to implement rulefit or decision trees algorithm for predicting stay lenghts.
+#TODO: Also use a linear regression model for the same purpose.
