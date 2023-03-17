@@ -1,6 +1,8 @@
 ## AUXILIARY PLOTS SCRIPT ##
 ## This script generates plots centric to the analysis of the features of interest ##
 
+# Dependencies: 
+install.packages("dplyr")
 library(ggplot2)
 
 ## Probability density plot for hospital stays.
@@ -31,3 +33,21 @@ ggplot(adm_not_dead_days, aes(x = stay_length, fill = stay_length))  +
   scale_y_log10() +
   scale_x_discrete(labels = labels)
   scale_fill_manual(values = c("blue", "red","green" ), name = "Length of Stay")
+
+  
+# Plotting the top 20 diagnoses for admissions in the hospital.
+  
+diagnosis_counts <- priority_diagnoses %>%
+  group_by(icd_code) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
+
+top_20_diagnoses <- head(diagnosis_counts, 20)
+diag_labels <- c('Chest pain', 'Coronary atherosclerosis', 'Other chest pain', 'Alcohol abuse', 'Depressive disorder', 'Major depressive disorder', 'Subendocardial infarction', 'Syncope', 'NSTEMI', 'Pneumonia','Sepsis','Atrial fibrilation','Alcohol intoxication','Unspecified septicemia','Acute appendicitis','Chest pain','Kidney failure','Aortic valve disorders','UTI','Pancreatitis')
+
+ggplot(top_20_diagnoses, aes(x = reorder(icd_code, -count), y = count)) +
+  geom_bar(stat = "identity") +
+  xlab("Diagnosis") +
+  ylab("Count") +
+  scale_x_discrete(labels = diag_labels) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
