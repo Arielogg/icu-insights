@@ -1,10 +1,6 @@
 ## DATA IMPORT SCRIPT ##
 ## This script imports tables of interest from the MIMIC-IV data set ##
 
-# Dependencies:
-install.packages("dplyr")
-library(dplyr)
-
 #Importing relevant tables from data set
 
 # Patients dataframe

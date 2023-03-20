@@ -1,6 +1,12 @@
 ## FEATURE SELECTION SCRIPT ##
 ## This script selects features and relationships of interest from the MIMIC IV dataset ##
 
+#Dependencies on this script
+install.packages("reshape2")
+install.packages("dplyr")
+library(reshape2)
+library(dplyr)
+
 #Separating admissions which resulted in deaths from those that didn't
 adm_not_dead <- subset(admissions, deathtime == "")
 adm_dead <- subset(admissions, deathtime != "")
@@ -14,8 +20,6 @@ days_between <- function(df, start_col, end_col) {
 }
 
 adm_not_dead_days <- days_between(adm_not_dead, "admittime", "dischtime")
-
-summary(adm_not_dead_days$days_between)
 
 # Labeling days by length of stay.
 categorize_days <- function(days) {
@@ -86,13 +90,24 @@ blood_press_bmi <- function(df) {
 
 omr_BMI_BP <- blood_press_bmi(omr)
 
+# Splitting blood pressure into systolic and diastolic
+
+split_BP <- function(df, column_name) {
+  df[["systolic"]] <- as.integer(sapply(strsplit(as.character(df[[column_name]]), "/"), "[", 1))
+  df[["diastolic"]] <- as.integer(sapply(strsplit(as.character(df[[column_name]]), "/"), "[", 2))
+  df[[column_name]] <- NULL
+  return(df)
+}
+
+omr_BMI_BP <- split_BP(omr_BMI_BP, "Blood_Pressure")
+
 # Merging everything in a single dataframe.
 
 combine_dataframes <- function(adm_not_dead_days, priority_diagnoses_age_g, omr_BMI_BP) {
   # Select the columns of interest from each dataframe
-  adm_not_dead_days <- adm_not_dead_days[, c("subject_id", "hadm_id", "admission_type", "insurance", "language", "marital_status", "race", "stay_length")]
+  adm_not_dead_days <- adm_not_dead_days[, c("subject_id", "hadm_id", "admission_type", "insurance", "language", "marital_status", "race", "stay_length", "days_between")]
   priority_diagnoses_age_g <- priority_diagnoses_age_g[, c("subject_id", "hadm_id", "icd_code", "gender", "anchor_age")]
-  omr_BMI_BP <- omr_BMI_BP[, c("subject_id", "Blood_Pressure", "BMI")]
+  omr_BMI_BP <- omr_BMI_BP[, c("subject_id", "systolic", "diastolic", "BMI")]
   
   # Fill missing values in race and marital_status columns with 'UNKNOWN'
   adm_not_dead_days$marital_status[is.na(adm_not_dead_days$marital_status)] <- 'UNKNOWN'
@@ -112,4 +127,3 @@ final_merged_df <- combine_dataframes(adm_not_dead_days, priority_diagnoses_age_
 # Exporting main table as a csv.
 
 write.csv(final_merged_df, file = "final_merged_df.csv", row.names = FALSE)
-
