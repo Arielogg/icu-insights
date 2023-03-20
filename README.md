@@ -1,4 +1,4 @@
-# ICU Length of Stay Prediction using the R programming language
+# Hospital Length of Stay Exploratory Data Analysis and Prediction using the R programming language
 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Logo_de_l%27Université_Jean_Monnet_Saint-Etienne.png/640px-Logo_de_l%27Université_Jean_Monnet_Saint-Etienne.png" alt="Université Jean Monnet" title="Université Jean Monnet">
 
 The goal of this project is to perform an exploratory data analysis using the R programming language on a portion of the MIMIC-IV dataset. Parting from any interesting relationships found in the data, a classification model based on the RuleFit algorithm is trained and used to predict the length of stay of a given in the hospital given some admission criteria.
