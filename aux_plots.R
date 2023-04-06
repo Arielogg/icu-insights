@@ -4,6 +4,8 @@
 # Dependencies: 
 install.packages("dplyr")
 library(ggplot2)
+library(caret)
+library(reshape2)
 
 ## Probability density plot for hospital stays.
 plot(density(adm_not_dead_days$days_between),
@@ -59,3 +61,17 @@ ggplot(plt, aes(Prediction, Reference, fill = Freq)) +
   geom_tile() +
   geom_text(aes(label = Freq)) +
   scale_fill_gradient(low = "white", high = "red")
+
+### Confusion matrix of XGB (Good Plots)
+# Melt the confusion matrix into a long format
+cmNorm <- conf_mat_xgb$table / rowSums(conf_mat_xgb$table)
+cmMelted <- melt(cmNorm)
+
+# Plot the confusion matrix as a heatmap
+colnames(cmMelted)
+
+ggplot(cmMelted, aes(x = Prediction, y = Reference, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "red") +
+  theme_minimal() +
+  ggtitle(paste("Confusion Matrix for the XGB Classifier, Accuracy =", round(conf_mat_xgb$overall["Accuracy"], 2)))

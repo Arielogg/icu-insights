@@ -77,27 +77,74 @@ balanced_accuracy <- mean(recall_per_class)
 rpart.plot(regression_tree)
 
 ########### XGBOOST MODEL ##############
-label_train <- as.data.frame(train[, 1])
-label_test <- as.data.frame(test[, 1])
+label_train <- as.data.frame(train[, 2])
+label_test <- as.data.frame(test[, 2])
 train$days_between <- NULL
+test$days_between <- NULL
 
 # Converting categoricals into ordinals (XGB-specific format)
-admission_type <- encode_ordinal(train[,1, drop=FALSE], order=c('EW EMER.','EU OBSERVATION','OBSERVATION ADMIT','SURGICAL SAME DAY ADMISSION','URGENT','DIRECT EMER.','AMBULATORY OBSERVATION','ELECTIVE','DIRECT OBSERVATION'))
-stay_length <- encode_ordinal(train[,2, drop=FALSE], order=c('0','1','2'))
-gender <- encode_ordinal(train[,2, drop=FALSE], order=c('F','M'))
-
+admission_type_train <- encode_ordinal(train[,1, drop=FALSE], order=c('EW EMER.','EU OBSERVATION','OBSERVATION ADMIT','SURGICAL SAME DAY ADMISSION','URGENT','DIRECT EMER.','AMBULATORY OBSERVATION','ELECTIVE','DIRECT OBSERVATION'))
+admission_type_test <- encode_ordinal(test[,1, drop=FALSE], order=c('EW EMER.','EU OBSERVATION','OBSERVATION ADMIT','SURGICAL SAME DAY ADMISSION','URGENT','DIRECT EMER.','AMBULATORY OBSERVATION','ELECTIVE','DIRECT OBSERVATION'))
+gendertrain <- encode_ordinal(train[,4, drop=FALSE], order=c('F','M'))
+gendertest <- encode_ordinal(test[,4, drop=FALSE], order=c('F','M'))
+  
 train$admission_type <- NULL
-train$stay_length <- NULL
 train$gender <- NULL
+test$admission_type <- NULL
+test$gender <- NULL
 
-train$admission_type <- admission_type[,1]
-train$stay_length <- stay_length[,1]
-train$gender <- gender[,1]
+train$admission_type <- admission_type_train[,1]
+train$stay_length <- as.numeric(as.character(train$stay_length)) # This is due to the fact that xgboost is extremely picky on the data format
+train$gender <- gendertrain[,1]
+test$admission_type <- admission_type_test[,1]
+test$stay_length <- as.numeric(as.character(test$stay_length))
+test$gender <- gendertest[,1]
 
-xgb_train <- xgb.DMatrix(data = train) 
-xgb_test <- xgb.DMatrix(data = test[,-3], label = label_test)
+# Defining predictor and response variables in training set
+train_x = data.matrix(train[,-1])
+xgb_train <- xgb.DMatrix(data = train_x, label = train$stay_length) 
 
-### Regression
+# Defining predictor and response variables in testing set
+test_x = data.matrix(test[,-1])
+xgb_test <- xgb.DMatrix(data = test_x, label = test$stay_length)
+
+colnames(xgb_test) <- colnames(xgb_train)
+
+# Set the parameters for the XGBoost model
+params <- list(
+  objective = "multi:softmax",
+  num_class = 3,
+  max_depth = 5,
+  eta = 0.3,
+  nthread = 2,
+  eval_metric = "mlogloss"
+)
+
+# Train the XGBoost model
+xgbModel <- xgb.train(
+  params = params,
+  data = xgb_train,
+  nrounds = 50,
+  watchlist = list(train = xgb_train, test = xgb_test),
+  print_every_n = 10
+)
+
+# Make predictions on the testing data
+xgbPreds <- predict(xgbModel, xgb_test)
+xgbPredsFactor <- factor(xgbPreds, levels = levels(factor(test[, 1])))
+
+# Evaluate the model's performance
+conf_mat_xgb <- confusionMatrix(xgbPredsFactor, factor(test[, 1]))
+
+########### Regression ##########
+#Redeclaring train and test sets:
+train <- db_reduced[train_index, ]
+test <- db_reduced[-train_index, ]
+
+#Removing unnecesary categoricals from dataframes
+train[c("subject_id", "hadm_id")] <- list(NULL) 
+test[c("subject_id", "hadm_id")] <- list(NULL)
+
 # Regression tree
 train$stay_length <- NULL # Don't need these two for regression
 test$stay_length <- NULL
@@ -106,4 +153,18 @@ test$days_between <- NULL
 regression_tree <- rpart(days_between ~ ., data = train, method = "anova")
 regression_tree_pred <- rpart.predict(regression_tree, test, type = "vector")
 
-#TODO: Evaluate regressor results
+# Calculate the mean squared error (MSE)
+mse <- mean((lmPreds - testData$Sepal.Length)^2)
+mse
+
+# Calculate the root mean squared error (RMSE)
+rmse <- sqrt(mse)
+rmse
+
+# Calculate the mean absolute error (MAE)
+mae <- mean(abs(lmPreds - testData$Sepal.Length))
+mae
+
+# Calculate the R-squared value
+rsq <- summary(lmModel)$r.squared
+rsq
