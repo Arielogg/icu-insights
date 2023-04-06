@@ -2,8 +2,8 @@
 ## This script selects features and relationships of interest from the MIMIC IV dataset ##
 
 #Dependencies on this script
-install.packages("reshape2")
-install.packages("dplyr")
+install.packages("reshape2") # If not installed
+install.packages("dplyr") # If not installed
 library(reshape2)
 library(dplyr)
 
@@ -19,46 +19,64 @@ days_between <- function(df, start_col, end_col) {
   return(df)
 }
 
-adm_not_dead_days <- days_between(adm_not_dead, "admittime", "dischtime")
+# Adding number of days for each admission
+adm_not_dead <- days_between(adm_not_dead, "admittime", "dischtime")
 
 # Labeling days by length of stay.
 categorize_days <- function(days) {
   if (days <= 7) {
-    return("0")
+    return("0") # Short stays
   } else if (days <= 30) {
-    return("1")
+    return("1") # Medium stays
   } else {
-    return("2")
+    return("2") # Long stays
   }
 }
 
 # Add new column to dataframe with categorized days
-adm_not_dead_days$stay_length <- sapply(adm_not_dead_days$days_between, categorize_days)
+adm_not_dead$stay_length <- sapply(adm_not_dead$days_between, categorize_days)
 
-# Getting most relevant diagnosis from diagnoses table, associated to admissions table.
 
-extract_priority_diagnoses <- function(df1, df2) {
-  # Extracting the list of unique subject IDs from admissions dataframe
-  patient_list <- df2$subject_id
+# Getting the 10 most important diagnoses per admission
+get_top_diag <- function(diagnoses, adm_not_dead) {
+  top_diag <- diagnoses %>%
+    group_by(hadm_id) %>%
+    arrange(seq_num) %>%
+    slice_head(n = 10) %>%
+    ungroup()
   
-  # Filtering rows in diagnosis dataframe to keep only patients in patient list
-  df1 %>%
-    group_by(subject_id) %>%
-    filter(seq_num == min(seq_num)) %>%
-    slice(1) %>%
-    group_by(subject_id) %>%
-    filter(n() == 1) %>%
-    filter(subject_id %in% patient_list)
+  result <- adm_not_dead %>%
+    left_join(top_diag, by = c("subject_id", "hadm_id")) %>%
+    select(hadm_id, subject_id, icd_code, seq_num, days_between)
+  return(result)
 }
 
-priority_diagnoses <- extract_priority_diagnoses(diagnoses, adm_not_dead)
+# Assigning target coding to each admission based on icd_codes/length of stay
+encode_admissions <- function(top_diagnoses) {
+  icd_means <- top_diagnoses %>%
+    group_by(icd_code) %>%
+    summarise(mean_stay = mean(days_between)) %>%
+    ungroup()
+  
+  df_encoded <- top_diagnoses %>%
+    left_join(icd_means, by = "icd_code") %>%
+    group_by(hadm_id, subject_id) %>%
+    summarise(encoded_admission = sum(mean_stay)) %>%
+    ungroup()
 
-add_gender_age <- function(df1, df2) {
-  df1 %>%
-    left_join(df2 %>% select(subject_id, gender, anchor_age), by = "subject_id")
+  return(df_encoded)
 }
 
-priority_diagnoses_age_g <- add_gender_age(priority_diagnoses, patients)
+top_10_diagnoses <- get_top_diag(diagnoses, adm_not_dead_days)
+encoded_admissions <- encode_admissions(top_10_diagnoses)
+
+# Adding gender and age from patients table
+add_gender_age <- function(encoded_admissions, patients) {
+  encoded_admissions %>%
+    left_join(patients %>% select(subject_id, gender, anchor_age), by = "subject_id")
+}
+
+priority_diagnoses_age_g <- add_gender_age(encoded_admissions, patients)
 
 # Getting patient's blood pressure and BMI.
 
@@ -106,7 +124,7 @@ omr_BMI_BP <- split_BP(omr_BMI_BP, "Blood_Pressure")
 combine_dataframes <- function(adm_not_dead_days, priority_diagnoses_age_g, omr_BMI_BP) {
   # Select the columns of interest from each dataframe
   adm_not_dead_days <- adm_not_dead_days[, c("subject_id", "hadm_id", "admission_type", "insurance", "language", "marital_status", "race", "stay_length", "days_between")]
-  priority_diagnoses_age_g <- priority_diagnoses_age_g[, c("subject_id", "hadm_id", "icd_code", "gender", "anchor_age")]
+  priority_diagnoses_age_g <- priority_diagnoses_age_g[, c("subject_id", "hadm_id", "encoded_admission", "gender", "anchor_age")]
   omr_BMI_BP <- omr_BMI_BP[, c("subject_id", "systolic", "diastolic", "BMI")]
   
   # Fill missing values in race and marital_status columns with 'UNKNOWN'
@@ -126,4 +144,4 @@ final_merged_df <- combine_dataframes(adm_not_dead_days, priority_diagnoses_age_
 
 # Exporting main table as a csv.
 
-write.csv(final_merged_df, file = "final_merged_df.csv", row.names = FALSE)
+write.csv(final_merged_df, file = "encoded_admissions_df.csv", row.names = FALSE)

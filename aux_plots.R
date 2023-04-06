@@ -51,3 +51,11 @@ ggplot(top_20_diagnoses, aes(x = reorder(icd_code, -count), y = count)) +
   ylab("Count") +
   scale_x_discrete(labels = diag_labels) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Plotting confusion matrix
+plt <- as.data.frame(confMatTree1$table)
+plt$Prediction <- factor(plt$Prediction, levels = rev(levels(plt$Prediction)))
+ggplot(plt, aes(Prediction, Reference, fill = Freq)) +
+  geom_tile() +
+  geom_text(aes(label = Freq)) +
+  scale_fill_gradient(low = "white", high = "red")
