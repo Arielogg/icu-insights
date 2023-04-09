@@ -1,7 +1,7 @@
-# Hospital Length of Stay Exploratory Data Analysis and Prediction using the R programming language
+# Data Mining for Medical Triage Assistance using the R Progamming Language
 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Logo_de_l%27Université_Jean_Monnet_Saint-Etienne.png/640px-Logo_de_l%27Université_Jean_Monnet_Saint-Etienne.png" alt="Université Jean Monnet" title="Université Jean Monnet">
 
-The goal of this project is to perform an exploratory data analysis using the R programming language on a portion of the MIMIC-IV dataset. Parting from any interesting relationships found in the data, a classification model based on the RuleFit algorithm is trained and used to predict the length of stay of a given in the hospital given some admission criteria.
+The goal of this project is to use the R programming language to extract and process information from the MIMIC-IV dataset that could be related to the length of stays of patients admitted in the intensive care unit (ICU) of a given hospital, in order to predict the length of a stay of incoming patients in said units through classification or regression models. Departing from any interesting relationships found in the data, classification models based on the decision trees, random forests, and eXtreme Gradient Boosting algorithms are trained and used to predict the length of stay of a given in the hospital given some admission criteria.
 
 ## Dataset
 
@@ -11,13 +11,13 @@ The dataset used in this project is the MIMIC-IV (Medical Information Mart for I
 
 The project is divided into the following stages:
 
-1. Data extraction: Synthesized in the file data_import.R, in this stage we select the most important tables from the dataset, related to the objective of the classifier, and their respective labels.
+1. Data extraction: found in the file data_import.R, in this stage I select the most important tables from the dataset, related to the objective of the classifier, and their respective labels.
 
-2. Feature selection: Synthesized in the file feature_selection.R. In this stage, the different tables are synthesized into one single table by means of selection and referencing across the different tables.
+2. Feature selection: found in the file feature_selection.R. In this stage, the different tables are synthesized into one single table by means of selection and referencing across the different tables.
 
-3. Exploratory data analysis (EDA): In this stage, we explore the MIMIC-IV dataset using statistical and visualization techniques to gain insights into the relationships between variables and identify patterns and trends in the data.
+3. Model evaluation: found in the file model_training.R. In this stage, I develop and evaluate a few predictive models using the previously mentioned machine learning algorithms, including decision trees, random forests, and gradient boosting. I also evaluate the performance of these models given standardized accuracy metrics for the given task.
 
-4. Model development and evaluation: Synthesized in the file model_training.R. In this stage, we develop and evaluate several predictive models using various machine learning algorithms, including regression, decision trees, random forests, and gradient boosting. We also evaluate the performance of our models using metrics such as mean squared error, R-squared, and accuracy.
+3. Visualization: found in the file aux_plots.R. In this stage, various auxiliary plots are produced to help illustrate the data, the models, and their respective performances.
 
 ## Project Files
 
@@ -25,9 +25,9 @@ The repository contains the following files:
 
 - `data_import.R`: This R script contains the code for performing the import of the files and storing them in dataframes.
 
-- `feature_selection.R`: This R script contains the code for preprocessing and cleaning the MIMIC-III dataset.
+- `feature_selection.R`: This R script contains the code for preprocessing and extracting features of interest from the MIMIC-IV dataset.
 
-- `model_training.R`: This R script contains the code for developing and evaluating predictive models for the ICU length of stay.
+- `model_training.R`: This R script contains the code for developing and evaluating predictive models for the length of stay.
 
 - `aux_plot.R`: This R script contains the code for plotting all auxiliary graphs.
 
@@ -38,10 +38,13 @@ The repository contains the following files:
 To run the project, you will need to have R and the following R packages installed:
 
 - `dplyr`
-- `AUC`
 - `reshape2`
 - `rpart.plot`
 - `rpart`
+- `caret`
+- `randomForest`
+- `xgboost`
+- `cleandata`
 
 ## Running the Project
 
@@ -53,7 +56,7 @@ To run the project, follow these steps:
 
 3. Run the data_import.R script to import the necessary files from the dataset.
 
-4. Run the feature_selection.R script to perform the feature selection and condensation.
+4. Run the feature_selection.R script to perform the feature selection and target encoding.
 
 5. Run the model_training.R script to develop and evaluate predictive models.
 

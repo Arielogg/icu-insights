@@ -2,7 +2,6 @@
 ## This script generates plots centric to the analysis of the features of interest ##
 
 # Dependencies: 
-install.packages("dplyr")
 library(ggplot2)
 library(caret)
 library(reshape2)
@@ -37,7 +36,7 @@ ggplot(adm_not_dead_days, aes(x = stay_length, fill = stay_length))  +
   scale_fill_manual(values = c("blue", "red","green" ), name = "Length of Stay")
 
   
-# Plotting the top 20 diagnoses for admissions in the hospital.
+## To plot the top 20 primary diagnoses for admissions in the hospital.
   
 diagnosis_counts <- priority_diagnoses %>%
   group_by(icd_code) %>%
@@ -54,15 +53,35 @@ ggplot(top_20_diagnoses, aes(x = reorder(icd_code, -count), y = count)) +
   scale_x_discrete(labels = diag_labels) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-# Plotting confusion matrix
-plt <- as.data.frame(confMatTree1$table)
-plt$Prediction <- factor(plt$Prediction, levels = rev(levels(plt$Prediction)))
-ggplot(plt, aes(Prediction, Reference, fill = Freq)) +
-  geom_tile() +
-  geom_text(aes(label = Freq)) +
-  scale_fill_gradient(low = "white", high = "red")
+### Confusion matrix of RF
+# Melt the confusion matrix into a long format
+cmNorm_rf <- conf_mat_rf$table / rowSums(conf_mat_rf$table)
+cmMelted_rf <- melt(cmNorm_rf)
 
-### Confusion matrix of XGB (Good Plots)
+# Plot the confusion matrix as a heatmap
+
+ggplot(cmMelted_rf, aes(x = Prediction, y = Reference, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "red") +
+  theme_minimal() +
+  ggtitle(paste("Confusion Matrix for the RF Classifier, Accuracy =", round(conf_mat_rf$overall["Accuracy"], 2)))
+
+
+### Confusion matrix of DT
+# Melt the confusion matrix into a long format
+cmNorm_dt <- conf_mat_dt$table / rowSums(conf_mat_dt$table)
+cmMelted_dt <- melt(cmNorm_dt)
+
+# Plot the confusion matrix as a heatmap
+
+ggplot(cmMelted_dt, aes(x = Prediction, y = Reference, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "red") +
+  theme_minimal() +
+  ggtitle(paste("Confusion Matrix for the DT Classifier, Accuracy =", round(conf_mat_dt$overall["Accuracy"], 2)))
+
+
+### Confusion matrix of XGB
 # Melt the confusion matrix into a long format
 cmNorm <- conf_mat_xgb$table / rowSums(conf_mat_xgb$table)
 cmMelted <- melt(cmNorm)

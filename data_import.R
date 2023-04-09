@@ -1,6 +1,7 @@
 ## DATA IMPORT SCRIPT ##
 ## This script imports tables of interest from the MIMIC-IV data set ##
 
+# Reminder: Git for this project can be found in Arielogg/icu-insights
 #Importing relevant tables from data set
 
 # Patients dataframe

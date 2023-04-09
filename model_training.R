@@ -1,7 +1,7 @@
 ## MODEL TRAINING SCRIPT ##
 ## This script attempts to build prediction models using the selected features from the dataset. ##
 
-# Loading dependencies (installing them if not already)
+# Loading dependencies (installing them if not installed already)
 install.packages("rpart.plot")
 install.packages('AUC')
 install.packages('caret')
@@ -11,7 +11,6 @@ install.packages("cleandata")
 
 library(rpart)
 library(rpart.plot)
-library(AUC)
 library(caret)
 library(xgboost)
 library(randomForest)
@@ -19,14 +18,15 @@ library(cleandata)
 
 # Importing the feature-selected data
 db_reduced <- read.csv("C:/Users/ariel/Documents/MLDM/Data Mining/encoded_admissions_df.csv")
+mean(db_reduced$days_between)
+median(db_reduced$days_between)
 
 # Separating admission lengths for regression and classification models
-admission_days <- db_reduced$days_between 
-stay_length <- db_reduced$stay_length
+#admission_days <- db_reduced$days_between 
+#stay_length <- db_reduced$stay_length
+db_reduced$days_between <- NULL # Only for classification problems
 
-#db_reduced$days_between <- NULL
-
-# Eliminating some variables as they do not contribute to problems
+# Eliminating some variables as they unnecesarily increase dimensionality of the problem
 db_reduced$insurance <- NULL
 db_reduced$marital_status <- NULL
 db_reduced$race <- NULL
@@ -53,28 +53,21 @@ test[c("subject_id", "hadm_id")] <- list(NULL)
 ########## Classification#############
 ####### DECISION TREES MODEL ##########
 dt_model <- rpart(stay_length ~ ., data = train, method = "class")
-predictions <- predict(dt_model, test[,-3], type = "class")
+predictions <- predict(dt_model, test[,-2], type = "class")
 
 # Evaluating decision tree's performance
-table(predictions, test$stay_length)
-confMatTree2 <- confusionMatrix(predictions, test$stay_length, positive = levels(test$stay_length)[2])
-accuracyTree2 <- confMatTree2$overall["Accuracy"]
-recall_per_class2 <- confMatTree2$byClass[, "Sensitivity"]
-balanced_accuracy2 <- mean(recall_per_class2)
+conf_mat_dt <- confusionMatrix(predictions, test$stay_length)
+conf_mat_dt
 
 rpart.plot(dt_model)
 
 ######### RANDOM FOREST MODEL ##########
 rf_model <- randomForest(stay_length ~ ., data = train)
-predictionsrf <- predict(rf_model, test[,-3], type = "class")
+predictionsrf <- predict(rf_model, test[,-2], type = "class")
 
-table(predictionsrf, test$stay_length)
-confMatTree1 <- confusionMatrix(predictionsrf, test$stay_length, positive = levels(test$stay_length)[2])
-accuracyTree1 <- confMatTree1$overall["Accuracy"]
-recall_per_class <- confMatTree1$byClass[, "Sensitivity"]
-balanced_accuracy <- mean(recall_per_class)
-
-rpart.plot(regression_tree)
+# Evaluating decision tree's performance
+conf_mat_rf <- confusionMatrix(predictionsrf, test$stay_length)
+conf_mat_rf
 
 ########### XGBOOST MODEL ##############
 label_train <- as.data.frame(train[, 2])
@@ -136,8 +129,18 @@ xgbPredsFactor <- factor(xgbPreds, levels = levels(factor(test[, 1])))
 # Evaluate the model's performance
 conf_mat_xgb <- confusionMatrix(xgbPredsFactor, factor(test[, 1]))
 
-########### Regression ##########
-#Redeclaring train and test sets:
+############################################################################
+########################## Regression ######################################
+############################################################################
+
+# Recalling data for the regression problem.
+db_reduced <- read.csv("C:/Users/ariel/Documents/MLDM/Data Mining/encoded_admissions_df.csv")
+db_reduced$insurance <- NULL
+db_reduced$marital_status <- NULL
+db_reduced$race <- NULL
+db_reduced$language <- NULL
+
+# Redeclaring train and test sets:
 train <- db_reduced[train_index, ]
 test <- db_reduced[-train_index, ]
 
@@ -149,22 +152,12 @@ test[c("subject_id", "hadm_id")] <- list(NULL)
 train$stay_length <- NULL # Don't need these two for regression
 test$stay_length <- NULL
 test_y <- test[,2]
-test$days_between <- NULL
+
 regression_tree <- rpart(days_between ~ ., data = train, method = "anova")
-regression_tree_pred <- rpart.predict(regression_tree, test, type = "vector")
+regression_tree_pred <- rpart.predict(regression_tree, test[,-2], type = "vector")
 
-# Calculate the mean squared error (MSE)
-mse <- mean((lmPreds - testData$Sepal.Length)^2)
-mse
-
-# Calculate the root mean squared error (RMSE)
+# Calculate the mean squared error, root mean squared error, and mean absolute error
+mse <- mean((regression_tree_pred - test[,2])^2)
 rmse <- sqrt(mse)
-rmse
+mae <- mean(abs(regression_tree_pred - test[,2]))
 
-# Calculate the mean absolute error (MAE)
-mae <- mean(abs(lmPreds - testData$Sepal.Length))
-mae
-
-# Calculate the R-squared value
-rsq <- summary(lmModel)$r.squared
-rsq

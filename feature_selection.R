@@ -83,14 +83,9 @@ priority_diagnoses_age_g <- add_gender_age(encoded_admissions, patients)
 blood_press_bmi <- function(df) {
   # Filtering the dataframe to only include rows where result_name is "Blood Pressure" or "BMI (kg/m2)"
   df <- df[df$result_name %in% c("Blood Pressure", "BMI (kg/m2)"), ]
-  
-  # Ordering the dataframe by subject_id and seq_num
   df <- df[order(df$subject_id, df$seq_num), ]
-  
-  # Removing duplicate subject_id and result_name combinations, keeping only the first occurrence
   df <- df[!duplicated(df[, c("subject_id", "result_name")]), ]
   
-  # Reshaping the data from long to wide format
   df_wide <- reshape(df,
                      idvar = "subject_id",
                      timevar = "result_name",
@@ -122,19 +117,14 @@ omr_BMI_BP <- split_BP(omr_BMI_BP, "Blood_Pressure")
 # Merging everything in a single dataframe.
 
 combine_dataframes <- function(adm_not_dead_days, priority_diagnoses_age_g, omr_BMI_BP) {
-  # Select the columns of interest from each dataframe
+  # Here I combine all the previously extracted data
   adm_not_dead_days <- adm_not_dead_days[, c("subject_id", "hadm_id", "admission_type", "insurance", "language", "marital_status", "race", "stay_length", "days_between")]
   priority_diagnoses_age_g <- priority_diagnoses_age_g[, c("subject_id", "hadm_id", "encoded_admission", "gender", "anchor_age")]
   omr_BMI_BP <- omr_BMI_BP[, c("subject_id", "systolic", "diastolic", "BMI")]
   
-  # Fill missing values in race and marital_status columns with 'UNKNOWN'
   adm_not_dead_days$marital_status[is.na(adm_not_dead_days$marital_status)] <- 'UNKNOWN'
-  
-  # Merge the dataframes by subject_id and hadm_id
   df_merged <- merge(adm_not_dead_days, priority_diagnoses_age_g, by = c("subject_id", "hadm_id"), all = TRUE)
   df_merged <- merge(df_merged, omr_BMI_BP, by = c("subject_id"), all = TRUE)
-  
-  # Drop rows containing missing values
   df_merged <- na.omit(df_merged)
   
   return(df_merged)
